@@ -54,7 +54,7 @@ public class VentanaPrincipal extends JFrame {
         leftPanel.add(bienvenida);
         leftPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-     // Кнопка Registrarse с иконкой
+     // Boton Registrarse con icono
         JButton btnRegistrarse = new JButton("Registrarse", new ImageIcon(getClass().getResource("/icons/register.png")));
         btnRegistrarse.setAlignmentX(Component.LEFT_ALIGNMENT);
         btnRegistrarse.addActionListener(e -> sistema.registrarNuevoUsuario());
@@ -68,7 +68,7 @@ public class VentanaPrincipal extends JFrame {
 			try {
 				sistema.iniciarSesion();
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
+				
 				e1.printStackTrace();
 			}
 		});
