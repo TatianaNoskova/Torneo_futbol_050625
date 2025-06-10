@@ -39,12 +39,8 @@ public class Equipo {
 		this.directorTecnico = directorTecnico;
 	}
     
-    
-
-
-
-	public int getIdEquipo() {
-        return idEquipo;
+    public int getIdEquipo() {
+    return idEquipo;
     }
     
     
@@ -139,21 +135,14 @@ public class Equipo {
 	}
 	
 	
-	
 	public Club getClub() {
 		return club;
 	}
 
 
-
-
-
 	public void setClub(Club club) {
 		this.club = club;
 	}
-
-
-
 
 
 	@Override

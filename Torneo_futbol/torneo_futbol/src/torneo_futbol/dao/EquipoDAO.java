@@ -83,6 +83,36 @@ public class EquipoDAO {
 	    return equipos;
 	}
 	
+	
+	public List<Equipo> obtenerTodos(Connection conn) throws SQLException {
+	    List<Equipo> equipos = new ArrayList<>();
+	    String sql = "SELECT id_equipo, nombre, categoria FROM equipo";
+	    
+	    try (Statement stmt = conn.createStatement();
+	         ResultSet rs = stmt.executeQuery(sql)) {
+	        while (rs.next()) {
+	            Equipo equipo = new Equipo(
+	            		rs.getInt("id_equipo"),
+	                    rs.getString("nombre"),
+	                    rs.getString("categoria"),
+	                    null,  // colores
+	                    null,  // rutaEscudo
+	                    null,  // estadioLocal
+	                    null   // directorTecnico
+	                    ); 
+	            equipo.setIdEquipo(0);
+	            equipo.setNombre(rs.getString("nombre"));
+	            equipo.setCategoria(rs.getString("categoria"));
+	            equipos.add(equipo);
+	        }
+	    }
+	    return equipos;
+	}
+	
+	
+	
+	
+	
 	public static Equipo obtenerEquipoPorId(Connection conn, int idEquipo) throws SQLException {
         String query = "SELECT id_equipo, nombre, categoria FROM equipo WHERE id_equipo = ?";
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
