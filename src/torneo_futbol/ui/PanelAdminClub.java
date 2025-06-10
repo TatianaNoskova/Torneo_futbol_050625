@@ -28,10 +28,13 @@ import torneo_futbol.model.Persona;
 
 public class PanelAdminClub extends JPanel {
 	
-	private AdminClub admin;  // объект администратора
+	private AdminClub admin; 
     private Club club;
+    
+    private JPanel panelIzquierdo;
+    private JPanel panelDerecho;
 
-    // Обновленный конструктор
+
     public PanelAdminClub(AdminClub admin, Club club) {
         this.admin = admin;  // передаем объект admin
         this.club = club;
@@ -40,39 +43,26 @@ public class PanelAdminClub extends JPanel {
     
     
 
-    
-    
     private void inicializar() {
         setLayout(new BorderLayout(20, 0));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Izquierda — contenido principal (info +  secciones )
-        JPanel panelIzquierdo = new JPanel();
+        panelIzquierdo = new JPanel();
         panelIzquierdo.setLayout(new BoxLayout(panelIzquierdo, BoxLayout.Y_AXIS));
+        JScrollPane scrollPane = new JScrollPane(panelIzquierdo);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        add(scrollPane, BorderLayout.CENTER);
 
-        JLabel titulo = new JLabel("Panel de Administración del Club");
-        titulo.setFont(new Font("Arial", Font.BOLD, 20));
-        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panelIzquierdo.add(titulo);
 
-        panelIzquierdo.add(Box.createVerticalStrut(20));
+        panelDerecho = new JPanel(new BorderLayout()); 
+        panelDerecho.setPreferredSize(new Dimension(200, 250));
+        add(panelDerecho, BorderLayout.EAST);
 
-        panelIzquierdo.add(seccionInfoClub());
-        panelIzquierdo.add(Box.createVerticalStrut(10));
-
-        panelIzquierdo.add(seccionCRUD( "Equipos", club.getEquipos(), "equipo", (Equipo e) -> e.getNombre()));
-        panelIzquierdo.add(Box.createVerticalStrut(10));
-
-        panelIzquierdo.add(seccionCRUD("Estadios", club.getEstadios(), "estadio", (Estadio e) -> e.getNombre()));
-        panelIzquierdo.add(Box.createVerticalStrut(10));
-
-        panelIzquierdo.add(seccionCRUD("Disciplinas", club.getDisciplinas(), "disciplina", (Disciplina e) -> e.getNombreDisciplina()));
-
-        add(panelIzquierdo, BorderLayout.CENTER);
-
-        // Правая часть — эмблема клуба
-        add(seccionEscudo(), BorderLayout.EAST);
+        construirContenido(); 
     }
+
+
 
     private JPanel seccionInfoClub() {
         JPanel panel = new JPanel();
@@ -292,6 +282,9 @@ public class PanelAdminClub extends JPanel {
                 }
             }
         }
+        
+        construirContenido();
+
     }
 
 
@@ -340,6 +333,9 @@ public class PanelAdminClub extends JPanel {
                 JOptionPane.showMessageDialog(this, "Error al eliminar " + tipo + ": " + e.getMessage());
             }
         }
+        
+        construirContenido();
+
     }
 
 
@@ -365,7 +361,7 @@ public class PanelAdminClub extends JPanel {
             }
 
             String nombreEscudo = JOptionPane.showInputDialog("Ingrese el nombre del archivo del escudo del equipo (ej: escudo1.png):");
-    	    String rutaEscudo = "./torneo_futbol/escudos/" + nombreEscudo;  
+    	    String rutaEscudo = "./resources/escudos/" + nombreEscudo;  
     	    System.out.println("Ruta del escudo: " + rutaEscudo); 
 
     	    File archivoEscudo = new File(rutaEscudo);
@@ -399,7 +395,13 @@ public class PanelAdminClub extends JPanel {
             }
 
             EstadioDAO estadioDAO = new EstadioDAO();
-            List<Estadio> estadios = estadioDAO.obtenerEstadiosPorClub(null, idClub);
+            Connection conn = Conexion.getInstance().getConnection();
+            if (conn == null) {
+                JOptionPane.showMessageDialog(null, "No se pudo conectar a la base de datos.");
+                return;
+            }
+            List<Estadio> estadios = estadioDAO.obtenerEstadiosPorClub(conn, idClub);
+
 
             if (estadios.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Primero debe registrar al menos un estadio.");
@@ -435,9 +437,9 @@ public class PanelAdminClub extends JPanel {
             }
 
             // Вставка данных в базу данных
-            try (Connection conn = Conexion.getInstance().getConnection()) {
+            try (Connection conn1 = Conexion.getInstance().getConnection()) {
                 String sql = "INSERT INTO equipo (nombre, categoria, colores, escudo, id_club) VALUES (?, ?, ?, ?, ?)";
-                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                try (PreparedStatement stmt = conn1.prepareStatement(sql)) {
                     stmt.setString(1, nombreEquipo);
                     stmt.setString(2, categoria);
                     stmt.setString(3, colores);
@@ -551,7 +553,8 @@ public class PanelAdminClub extends JPanel {
                     }
             
            }
-        
+        construirContenido();
+
     }
         
 
@@ -592,6 +595,68 @@ public class PanelAdminClub extends JPanel {
 
         return panel;
     }
+    
+    private void construirContenido() {
+        panelIzquierdo.removeAll();
+        panelDerecho.removeAll();
+
+        
+        JLabel titulo = new JLabel("Panel de Administración del Club");
+        titulo.setFont(new Font("Arial", Font.BOLD, 20));
+        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelIzquierdo.add(titulo);
+        panelIzquierdo.add(Box.createVerticalStrut(20));
+
+        panelIzquierdo.add(seccionInfoClub());
+        panelIzquierdo.add(Box.createVerticalStrut(10));
+
+        try (Connection conn = Conexion.getInstance().getConnection()) {
+            ClubDAO clubDAO = new ClubDAO();
+            this.club = clubDAO.obtenerClubPorId(conn, club.getId());
+
+            PersonaDAO personaDAO = new PersonaDAO();
+
+            String email;
+            if (this.admin != null) {
+                email = this.admin.getEmail();
+            } else {
+                AdminClub adminClub = personaDAO.obtenerAdminPorClubId(conn, club.getId());
+                if (adminClub != null) {
+                    email = adminClub.getEmail();
+                    this.admin = adminClub;
+                } else {
+                    email = null;
+                }
+            }
+        } catch (SQLException | IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al obtener datos actualizados del club.");
+        }
+
+        panelIzquierdo.add(seccionCRUD("Equipos", club.getEquipos(), "equipo", (Equipo e) -> e.getNombre()));
+        panelIzquierdo.add(Box.createVerticalStrut(10));
+
+        panelIzquierdo.add(seccionCRUD("Estadios", club.getEstadios(), "estadio", (Estadio e) -> e.getNombre()));
+        panelIzquierdo.add(Box.createVerticalStrut(10));
+
+        panelIzquierdo.add(seccionCRUD("Disciplinas", club.getDisciplinas(), "disciplina", (Disciplina e) -> e.getNombreDisciplina()));
+
+       
+        panelDerecho.add(seccionEscudo(), BorderLayout.CENTER);
+
+        
+        panelIzquierdo.revalidate();
+        panelIzquierdo.repaint();
+
+        panelDerecho.revalidate();
+        panelDerecho.repaint();
+    }
+
+
+    
+
+
+       
     
     
   

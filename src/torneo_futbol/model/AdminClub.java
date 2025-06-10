@@ -258,122 +258,127 @@ public class AdminClub extends Administrador {
 	  }
 	  
 	  private void registrarEquipo() {
-		  
-		  ClubDAO clubDAO = new ClubDAO();  
-		  int idClub = clubDAO.obtenerIdClubPorAdmin(email);  
-		  
-		  if (idClub == -1) {
-			  JOptionPane.showMessageDialog(null, "Primero debe registrar un club.");
-			  return;
-		  }
+		    ClubDAO clubDAO = new ClubDAO();  
+		    int idClub = clubDAO.obtenerIdClubPorAdmin(email);  
+		    
+		    if (idClub == -1) {
+		        JOptionPane.showMessageDialog(null, "Primero debe registrar un club.");
+		        return;
+		    }
 
-	    String nombreEquipo = JOptionPane.showInputDialog("Ingrese el nombre del equipo:");
-	    String categoria = JOptionPane.showInputDialog("Ingrese la categoría del equipo (ej: Primera, Juvenil, etc):");
-	    String colores = JOptionPane.showInputDialog("Ingrese los colores del equipo:");
-	    
-	    String nombreEscudo = JOptionPane.showInputDialog("Ingrese el nombre del archivo del escudo del equipo (ej: escudo1.png):");
-	    String rutaEscudo = "./torneo_futbol/escudos/" + nombreEscudo;  
-	    System.out.println("Ruta del escudo: " + rutaEscudo); 
+		    String nombreEquipo = JOptionPane.showInputDialog("Ingrese el nombre del equipo:");
+		    String categoria = JOptionPane.showInputDialog("Ingrese la categoría del equipo (ej: Primera, Juvenil, etc):");
+		    String colores = JOptionPane.showInputDialog("Ingrese los colores del equipo:");
+		    
+		    String nombreEscudo = JOptionPane.showInputDialog("Ingrese el nombre del archivo del escudo del equipo (ej: escudo1.png):");
+		    String rutaEscudo = "./resources/escudos/" + nombreEscudo;
+		    System.out.println("Ruta del escudo: " + rutaEscudo); 
 
-	    File archivoEscudo = new File(rutaEscudo);
-	    if (!archivoEscudo.exists()) {
-	        JOptionPane.showMessageDialog(null, "El archivo del escudo no existe en la ruta especificada.");
-	        return;
-	    }
-	    
-	    System.out.println("Tamaño del archivo del escudo: " + archivoEscudo.length() + " bytes");
+		    File archivoEscudo = new File(rutaEscudo);
+		    System.out.println("Ruta absoluta real: " + archivoEscudo.getAbsolutePath());
+		    System.out.println("Existe archivo: " + archivoEscudo.exists());
 
-	    byte[] escudoBytes = new byte[(int) archivoEscudo.length()];
-	    try (FileInputStream fis = new FileInputStream(archivoEscudo)) {
-	        fis.read(escudoBytes);
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	        JOptionPane.showMessageDialog(null, "Error al leer el archivo del escudo.");
-	        return;
-	    }
+		    if (!archivoEscudo.exists()) {
+		        JOptionPane.showMessageDialog(null, "El archivo del escudo no existe en la ruta especificada.");
+		        return;
+		    }
 
-	    if (escudoBytes == null || escudoBytes.length == 0) {
-	        JOptionPane.showMessageDialog(null, "El archivo del escudo está vacío o no se pudo leer correctamente.");
-	        return;
-	    }
+		    byte[] escudoBytes = new byte[(int) archivoEscudo.length()];
+		    try (FileInputStream fis = new FileInputStream(archivoEscudo)) {
+		        fis.read(escudoBytes);
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		        JOptionPane.showMessageDialog(null, "Error al leer el archivo del escudo.");
+		        return;
+		    }
 
-	    EstadioDAO estadioDAO = new EstadioDAO();
-	    List<Estadio> estadios = estadioDAO.obtenerEstadiosPorClub(null, idClub);
+		    if (escudoBytes.length == 0) {
+		        JOptionPane.showMessageDialog(null, "El archivo del escudo está vacío o no se pudo leer correctamente.");
+		        return;
+		    }
 
-	    if (estadios.isEmpty()) {
-	        JOptionPane.showMessageDialog(null, "Primero debe registrar al menos un estadio.");
-	        return;
-	    }
+		    
+		    try (Connection conn = Conexion.getInstance().getConnection()) {
+		        if (conn == null) {
+		            JOptionPane.showMessageDialog(null, "No se pudo conectar a la base de datos.");
+		            return;
+		        }
 
-	    String[] nombresEstadios = new String[estadios.size()];
+		        // Obtener estadios
+		        EstadioDAO estadioDAO = new EstadioDAO();
+		        List<Estadio> estadios = estadioDAO.obtenerEstadiosPorClub(conn, idClub);
 
-	    for (int i = 0; i < estadios.size(); i++) {
-	      nombresEstadios[i] = estadios.get(i).getNombre();
-	    }
+		        if (estadios.isEmpty()) {
+		            JOptionPane.showMessageDialog(null, "Primero debe registrar al menos un estadio.");
+		            return;
+		        }
 
-	    String seleccion = (String) JOptionPane.showInputDialog(
-	        null,
-	        "Seleccione el estadio local:",
-	        "Estadio",
-	        JOptionPane.QUESTION_MESSAGE,
-	        null,
-	        nombresEstadios,
-	        nombresEstadios[0]);
+		        String[] nombresEstadios = new String[estadios.size()];
+		        for (int i = 0; i < estadios.size(); i++) {
+		            nombresEstadios[i] = estadios.get(i).getNombre();
+		        }
 
-	    if (seleccion == null) {
-	      JOptionPane.showMessageDialog(null, "No se seleccionó ningún estadio.");
-	      return;
-	    }
+		        String seleccion = (String) JOptionPane.showInputDialog(
+		            null,
+		            "Seleccione el estadio local:",
+		            "Estadio",
+		            JOptionPane.QUESTION_MESSAGE,
+		            null,
+		            nombresEstadios,
+		            nombresEstadios[0]
+		        );
 
-	    Estadio estadioSeleccionado = null;
-	    for (Estadio estadio : estadios) {
-	      if (estadio.getNombre().equals(seleccion)) {
-	        estadioSeleccionado = estadio;
-	        break;
-	      }
-	    }
+		        if (seleccion == null) {
+		            JOptionPane.showMessageDialog(null, "No se seleccionó ningún estadio.");
+		            return;
+		        }
 
-	    try (Connection conn = Conexion.getInstance().getConnection()) {
-	        String sql = "INSERT INTO equipo (nombre, categoria, colores, escudo, id_club) VALUES (?, ?, ?, ?, ?)";
-	        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-	            stmt.setString(1, nombreEquipo);   
-	            stmt.setString(2, categoria);      
-	            stmt.setString(3, colores);        
-	            stmt.setBytes(4, escudoBytes); 
-	            stmt.setInt(5, idClub);  
+		        Estadio estadioSeleccionado = estadios.stream()
+		            .filter(e -> e.getNombre().equals(seleccion))
+		            .findFirst()
+		            .orElse(null);
 
-	            stmt.executeUpdate();
+		        // Вставка команды
+		        String sql = "INSERT INTO equipo (nombre, categoria, colores, escudo, id_club) VALUES (?, ?, ?, ?, ?)";
+		        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+		            stmt.setString(1, nombreEquipo);   
+		            stmt.setString(2, categoria);      
+		            stmt.setString(3, colores);        
+		            stmt.setBytes(4, escudoBytes); 
+		            stmt.setInt(5, idClub);  
 
-	         // Mostrar los datos y escudo
-	         ImageIcon escudoIcon = null;
-	         try {
-	             escudoIcon = new ImageIcon(escudoBytes);
-	             Image imagenOriginal = escudoIcon.getImage();
-	             Image imagenEscalada = imagenOriginal.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-	             ImageIcon escudoEscalado = new ImageIcon(imagenEscalada);
+		            stmt.executeUpdate();
+		        }
 
-	             JOptionPane.showMessageDialog(
-	                 null,
-	                 "Equipo registrado extitosamente:\n" +
-	                 "Nombre: " + nombreEquipo + "\n" +
-	                 "Categoría: " + categoria + "\n" +
-	                 "Colores: " + colores + "\n" +
-	                 "Estadio Local: " + estadioSeleccionado.getNombre(),
-	                 "Escudo del equipo",
-	                 JOptionPane.INFORMATION_MESSAGE,
-	                 escudoEscalado
-	             );
-	         } catch (Exception ex) {
-	             ex.printStackTrace();
-	             JOptionPane.showMessageDialog(null, "Equipo registrado, pero no se pudo cargar el escudo.");
-	         }
+		        // Показать подтверждение с изображением
+		        try {
+		            ImageIcon escudoIcon = new ImageIcon(escudoBytes);
+		            Image imagenOriginal = escudoIcon.getImage();
+		            Image imagenEscalada = imagenOriginal.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+		            ImageIcon escudoEscalado = new ImageIcon(imagenEscalada);
 
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	        JOptionPane.showMessageDialog(null, "Error al registrar el equipo.");
-	    }
-	}
+		            JOptionPane.showMessageDialog(
+		                null,
+		                "Equipo registrado exitosamente:\n" +
+		                "Nombre: " + nombreEquipo + "\n" +
+		                "Categoría: " + categoria + "\n" +
+		                "Colores: " + colores + "\n" +
+		                "Estadio Local: " + estadioSeleccionado.getNombre(),
+		                "Escudo del equipo",
+		                JOptionPane.INFORMATION_MESSAGE,
+		                escudoEscalado
+		            );
+		        } catch (Exception ex) {
+		            ex.printStackTrace();
+		            JOptionPane.showMessageDialog(null, "Equipo registrado, pero no se pudo cargar el escudo.");
+		        }
+
+		    } catch (SQLException e) {
+		        e.printStackTrace();
+		        JOptionPane.showMessageDialog(null, "Error al registrar el equipo.");
+		    }
+		}
+
 	  
 	  private void registrarDisciplinaYInstalacion() {
 		    

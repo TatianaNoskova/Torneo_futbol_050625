@@ -3,6 +3,7 @@ package torneo_futbol.dao;
 import java.sql.*;
 import java.util.*;
 
+import torneo_futbol.model.AdminClub;
 import torneo_futbol.model.DirectorTecnico;
 
 public class PersonaDAO {
@@ -42,6 +43,34 @@ public class PersonaDAO {
             }
         }
     }
+	
+	
+
+		public AdminClub obtenerAdminPorClubId(Connection conn, int idClub) throws SQLException {
+		    String sql = """
+		        SELECT p.nombre, p.apellido, p.email, p.password
+		        FROM persona p
+		        JOIN club c ON c.id_admin = p.id_persona
+		        WHERE c.id_club = ? AND p.rol = 'Admin Club'
+		    """;
+
+		    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+		        stmt.setInt(1, idClub);
+		        try (ResultSet rs = stmt.executeQuery()) {
+		            if (rs.next()) {
+		                String nombre = rs.getString("nombre");
+		                String apellido = rs.getString("apellido");
+		                String email = rs.getString("email");
+		                String password = rs.getString("password"); // Добавлено
+		                return new AdminClub(nombre, apellido, email, password); // Исправлено
+		            }
+		        }
+		    }
+
+		    return null; // если не найден
+		}
+
+	
 }
 
 
